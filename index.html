@@ -1,26 +1,168 @@
-async function generateSoal() {
-    const apiKey = document.getElementById('apiKey').value.trim();
-    if (!apiKey) {
-        alert('Mohon masukkan API Key Anda terlebih dahulu!');
-        return;
-    }
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Soal Otomatis AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#6C3BFF',
+                        brandHover: '#582be8'
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen pb-12">
 
-    const btn = document.getElementById('btnGenerate');
-    btn.disabled = true;
-    btn.innerHTML = '⏳ Sedang Memproses...';
+    <header class="bg-brand text-white py-6 shadow-md mb-8">
+        <div class="max-w-5xl mx-auto px-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">🧪 Generator Soal Otomatis AI</h1>
+                <p class="text-xs text-purple-200 mt-1">Platform Pembuat Soal Siap Cetak untuk Guru SD, SMP, SMA/SMK</p>
+            </div>
+        </div>
+    </header>
 
-    const payload = {
-        jenjang: document.getElementById('jenjang').value,
-        kelas: document.getElementById('kelas').value,
-        matpel: document.getElementById('matpel').value,
-        kurikulum: document.getElementById('kurikulum').value,
-        topik: document.getElementById('topik').value,
-        jumlah: document.getElementById('jumlah').value,
-        bentuk: document.getElementById('bentuk').value,
-        level: document.getElementById('level').value
-    };
+    <main class="max-w-5xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
 
-    const promptText = `Anda adalah sistem pembuat soal ujian profesional. Buatkan dokumen soal lengkap berdasarkan ketentuan berikut:
+        <div class="md:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-200 h-fit">
+            <h2 class="text-lg font-bold text-gray-800 mb-4 pb-2 border-b">Pengaturan Soal</h2>
+            
+            <form id="generatorForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Gemini API Key / Token (AQ...)</label>
+                    <input type="password" id="apiKey" required placeholder="Masukkan kunci AQ... Anda" class="w-full text-sm border border-gray-300 p-2 rounded focus:ring-2 focus:ring-brand outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Jenjang Pendidikan</label>
+                    <select id="jenjang" onchange="updateKelasOptions()" class="w-full text-sm border border-gray-300 p-2 rounded focus:ring-2 focus:ring-brand outline-none">
+                        <option value="SD/MI">SD/MI</option>
+                        <option value="SMP/MTs">SMP/MTs</option>
+                        <option value="SMA/MA" selected>SMA/MA</option>
+                        <option value="SMK">SMK</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Kelas</label>
+                    <select id="kelas" class="w-full text-sm border border-gray-300 p-2 rounded focus:ring-2 focus:ring-brand outline-none"></select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Mata Pelajaran</label>
+                    <input type="text" id="matpel" value="Ekonomi" placeholder="Contoh: Ekonomi" class="w-full text-sm border border-gray-300 p-2 rounded focus:ring-2 focus:ring-brand outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Kurikulum</label>
+                    <select id="kurikulum" class="w-full text-sm border border-gray-300 p-2 rounded focus:ring-2 focus:ring-brand outline-none">
+                        <option value="Kurikulum Merdeka">Kurikulum Merdeka</option>
+                        <option value="Kurikulum 2013">Kurikulum 2013</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Topik / Materi</label>
+                    <textarea id="topik" rows="3" class="w-full text-sm border border-gray-300 p-2 rounded focus:ring-2 focus:ring-brand outline-none">Permasalahan Ketenagakerjaan di Indonesia</textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Jumlah Soal</label>
+                        <input type="number" id="jumlah" value="5" min="1" max="50" class="w-full text-sm border border-gray-300 p-2 rounded focus:ring-2 focus:ring-brand outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Bentuk Soal</label>
+                        <select id="bentuk" class="w-full text-sm border border-gray-300 p-2 rounded focus:ring-2 focus:ring-brand outline-none">
+                            <option value="Pilihan Ganda">Pilihan Ganda</option>
+                            <option value="Uraian">Uraian</option>
+                            <option value="Campuran">Campuran</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Tingkat Kesulitan</label>
+                    <select id="level" class="w-full text-sm border border-gray-300 p-2 rounded focus:ring-2 focus:ring-brand outline-none">
+                        <option value="C1 (Mengingat)">C1 (Mengingat)</option>
+                        <option value="C2 (Memahami)">C2 (Memahami)</option>
+                        <option value="C3 (Menerapkan)">C3 (Menerapkan)</option>
+                        <option value="C4 (Menganalisis)">C4 (Menganalisis)</option>
+                        <option value="HOTS (Dominan C4)" selected>HOTS (Dominan C4)</option>
+                    </select>
+                </div>
+
+                <button type="button" onclick="generateSoal()" id="btnGenerate" class="w-full bg-brand hover:bg-brandHover text-white font-bold py-3 rounded-lg shadow-md transition duration-200 mt-4 flex justify-center items-center gap-2">
+                    <span>🧪 BUAT SOAL</span>
+                </button>
+            </form>
+        </div>
+
+        <div class="md:col-span-2 space-y-4">
+            <div id="toolbar" class="hidden bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex justify-between items-center">
+                <span class="text-sm font-semibold text-gray-700">Hasil Generator:</span>
+                <button onclick="downloadPDF()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-2 rounded font-semibold flex items-center gap-1">
+                    📄 Download PDF
+                </button>
+            </div>
+
+            <div id="outputContainer" class="bg-white p-8 rounded-xl shadow-sm border border-gray-200 min-h-[500px]">
+                <div id="placeholder" class="text-center text-gray-400 py-24">
+                    <p class="text-4xl mb-2">📄</p>
+                    <p class="text-sm">Soal yang di-generate akan muncul di sini.</p>
+                </div>
+                <div id="documentPaper" class="hidden text-gray-900 font-serif leading-relaxed"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        function updateKelasOptions() {
+            const jenjang = document.getElementById('jenjang').value;
+            const kelasSelect = document.getElementById('kelas');
+            kelasSelect.innerHTML = '';
+            let options = (jenjang === 'SD/MI') ? ['I', 'II', 'III', 'IV', 'V', 'VI'] : (jenjang === 'SMP/MTs') ? ['VII', 'VIII', 'IX'] : ['X', 'XI', 'XII'];
+            options.forEach(k => {
+                const opt = document.createElement('option');
+                opt.value = k;
+                opt.textContent = 'Kelas ' + k;
+                kelasSelect.appendChild(opt);
+            });
+        }
+        updateKelasOptions();
+
+        async function generateSoal() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            if (!apiKey) {
+                alert('Masukkan API Key/Token Anda terlebih dahulu!');
+                return;
+            }
+
+            const btn = document.getElementById('btnGenerate');
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Sedang Memproses...';
+
+            const payload = {
+                jenjang: document.getElementById('jenjang').value,
+                kelas: document.getElementById('kelas').value,
+                matpel: document.getElementById('matpel').value,
+                kurikulum: document.getElementById('kurikulum').value,
+                topik: document.getElementById('topik').value,
+                jumlah: document.getElementById('jumlah').value,
+                bentuk: document.getElementById('bentuk').value,
+                level: document.getElementById('level').value
+            };
+
+            const promptText = `Anda adalah sistem pembuat soal ujian profesional. Buatkan dokumen soal lengkap berdasarkan ketentuan berikut:
 - Jenjang: ${payload.jenjang}
 - Kelas: ${payload.kelas}
 - Mata Pelajaran: ${payload.matpel}
@@ -39,42 +181,58 @@ Berikan output langsung dalam format HTML murni (tanpa markdown '''html) dengan 
 
 Gunakan styling HTML inline yang rapi, bersih, profesional seperti dokumen ujian cetak A4 resmi di Indonesia.`;
 
-    // 1. Menggunakan Header 'x-goog-api-key' resmi untuk format kunci AQ...
-    // 2. Menggunakan endpoint 'gemini-1.5-flash'
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
+            // Teknik pemanggilan otomatis: Mendukung AIzaSy... maupun AQ...
+            let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
+            let headers = { 'Content-Type': 'application/json' };
 
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'x-goog-api-key': apiKey
-            },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: promptText }] }]
-            })
-        });
+            if (apiKey.startsWith('AQ')) {
+                // Format token OAuth/Cloud Service Account
+                headers['Authorization'] = `Bearer ${apiKey}`;
+            } else {
+                // Format API Key standar
+                url += `?key=${apiKey}`;
+            }
 
-        const data = await response.json();
-        
-        if (response.ok && data.candidates && data.candidates[0].content.parts[0].text) {
-            let htmlResult = data.candidates[0].content.parts[0].text;
-            htmlResult = htmlResult.replace(/```html/g, '').replace(/```/g, '');
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: promptText }] }]
+                    })
+                });
 
-            document.getElementById('placeholder').classList.add('hidden');
-            const paper = document.getElementById('documentPaper');
-            paper.innerHTML = htmlResult;
-            paper.classList.remove('hidden');
-            document.getElementById('toolbar').classList.remove('hidden');
-        } else {
-            console.error('API Error:', data);
-            alert('Gagal menghasilkan soal: ' + (data.error ? data.error.message : 'Respons tidak valid dari server.'));
+                const data = await response.json();
+                
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    let htmlResult = data.candidates[0].content.parts[0].text.replace(/```html/g, '').replace(/```/g, '');
+                    document.getElementById('placeholder').classList.add('hidden');
+                    const paper = document.getElementById('documentPaper');
+                    paper.innerHTML = htmlResult;
+                    paper.classList.remove('hidden');
+                    document.getElementById('toolbar').classList.remove('hidden');
+                } else {
+                    alert('Gagal: ' + (data.error ? data.error.message : 'Respon tidak valid'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Terjadi kesalahan jaringan.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🧪 BUAT SOAL';
+            }
         }
-    } catch (err) {
-        console.error('Fetch Error:', err);
-        alert('Terjadi kesalahan koneksi atau jaringan.');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '🧪 BUAT SOAL';
-    }
-}
+
+        function downloadPDF() {
+            const element = document.getElementById('documentPaper');
+            html2pdf().set({
+                margin: [10, 10, 10, 10],
+                filename: 'Naskah_Soal_Otomatis.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(element).save();
+        }
+    </script>
+</body>
+</html>
